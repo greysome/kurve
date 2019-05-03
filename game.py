@@ -3,7 +3,7 @@ import contextlib
 from sys import argv
 from time import sleep
 import tensorflow as tf
-from engine import Player, Engine
+from engine import Engine
 from ai import AI
 
 # suppress welcome message
@@ -48,10 +48,14 @@ class Game(Engine):
 
         self.ai_ids = range(n_humans, n_humans+n_ais)
         self.ai_states = {}
-        self.ai = AI(12)
+        self.ai = AI(15)
         self.sess = tf.Session()
-        with open('trained.obj', 'rb') as f:
+        self.sess.run(tf.global_variables_initializer())
+        with open('trained.model', 'rb') as f:
             self.W1, self.W2 = pickle.load(f)
+            W1_assign = self.ai.W1.assign(self.W1)
+            W2_assign = self.ai.W2.assign(self.W2)
+            self.sess.run((W1_assign, W2_assign))
 
         self._pygame_init()
 
@@ -73,7 +77,7 @@ class Game(Engine):
             ended, survivor = self.game_ended()
             if ended:
                 if survivor:
-                    print('{0} wins!'.format(survivor.id_))
+                    print(f'{survivor.id_} wins!')
                 else:
                     print('nobody wins!')
                 self._cleanup()
@@ -81,7 +85,10 @@ class Game(Engine):
 
             self._draw_players_preupdate()
             self.step(self._get_human_updates() + self._get_ai_updates())
-            self.ai_states = {id_: self.observe(id_) for id_ in self.ai_ids}
+            self.ai_states = {}
+            for id_ in self.ai_ids:
+                state, *_ = self.observe(id_)
+                self.ai_states.update({id_: state})
             self._draw_players_postupdate()
 
             self.screen.blit(self.tmp_sfc, (0, 0))
@@ -137,9 +144,7 @@ class Game(Engine):
         updates = []
         for id_, inputs in self.ai_states.items():
             action = self.sess.run(self.ai.action,
-                                   feed_dict={self.ai.inputs: inputs,
-                                              self.ai.W1: self.W1,
-                                              self.ai.W2: self.W2})
+                                   feed_dict={self.ai.inputs: inputs})
             updates.append((id_, action[0]))
         return updates
 

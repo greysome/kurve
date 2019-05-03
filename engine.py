@@ -1,7 +1,7 @@
-import time
 import random
 import contextlib
 import numpy as np
+from time import sleep
 from math import cos, sin, radians, floor
 from enum import Enum
 
@@ -55,7 +55,7 @@ class Engine(object):
     ACTION_LEFT = 0
     ACTION_RIGHT = 1
 
-    def __init__(self, n_players, w=1000, h=1000):
+    def __init__(self, n_players, w=500, h=500):
         Player.n_instances = 0
         self.w, self.h = w, h
         self.n_players = n_players
@@ -89,7 +89,13 @@ class Engine(object):
 
     def observe(self, id_):
         p = self._find_player(id_)
-        return self._get_max_dists(p)
+        if p.is_alive:
+            done = False
+            reward = 0
+        else:
+            done = True
+            reward = -1
+        return self._get_max_dists(p), reward, done
 
     def out_of_bounds(self, x, y):
         return x <= 0 or x >= self.w or y <= 0 or y >= self.h
@@ -134,13 +140,6 @@ class Engine(object):
             y = random.randint(round(y_offset + h*j + section_frac*h),
                                round(y_offset + h*j + (1-section_frac)*h))
 
-            '''
-            if id_ == 0:
-                x = 900
-                y = 900
-                theta = 90
-            '''
-
             p = Player(x, y, theta)
             players.append(p)
 
@@ -158,9 +157,6 @@ class Engine(object):
         return None
 
     def _check_collision(self):
-        killed = set()
-        killers = set()
-
         for idx, p in enumerate(self.players):
             if not p.is_alive:
                 continue
@@ -176,14 +172,9 @@ class Engine(object):
                     # the previous head
                     if self.n_ticks-ticks < 6:
                         continue
-                    killed.add(p.id_)
                     p.is_alive = False
                 else:
-                    killed.add(p.id_)
-                    killers.add(trail_id)
                     p.is_alive = False
-
-        return killers, killed
 
     def _update_players(self):
         for p in self.players:
@@ -202,9 +193,9 @@ class Engine(object):
         for p in self.players:
             if p.id_ == id_:
                 return p
-        raise KurveError('could not find player with id {}'.format(id_))
+        raise KurveError(f'could not find player with id {id_}')
 
-    def _get_max_dists(self, p, sector_theta=5, fov=60):
+    def _get_max_dists(self, p, sector_theta=10, fov=150):
         n_sectors = fov//sector_theta
         max_dists = np.zeros(n_sectors)
 

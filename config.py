@@ -1,0 +1,11 @@
+n_episodes = 1000
+hidden_neurons = 20
+y = 0.9
+K = 10
+learning_rate = 0.01
+initial_e = 1
+final_e = 0.1
+anneal_frames=10000
+observe_frames=1000
+update_frames=100
+memory_size=5000
