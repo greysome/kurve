@@ -195,7 +195,7 @@ class Engine(object):
                 return p
         raise KurveError(f'could not find player with id {id_}')
 
-    def _get_max_dists(self, p, sector_theta=10, fov=150):
+    def _get_max_dists(self, p, sector_theta=5, fov=150):
         n_sectors = fov//sector_theta
         max_dists = np.zeros(n_sectors)
 

@@ -4,8 +4,9 @@ import tensorflow as tf
 from ai import AI
 
 class Memory(object):
-    def __init__(self, max_size):
+    def __init__(self, max_size=10000, alpha=0.99):
         self.max_size = max_size
+        self.alpha = alpha
         self.buffer = []
 
     def add(self, state, action, reward, next_state, done):
@@ -14,19 +15,26 @@ class Memory(object):
         self.buffer.append((state, action, reward, next_state, done))
 
     def sample(self, n):
-        if len(self.buffer) >= n:
-            return random.sample(self.buffer, n)
-        else:
+        if len(self.buffer) < n:
             return self.buffer
 
+        buffer = sorted(self.buffer, key=lambda x: abs(x[2]), reverse=True)
+        probs = np.array([self.alpha ** i for i in range(len(buffer))])
+        probs = probs / sum(probs)
+        idxs = np.random.choice(np.arange(len(buffer)),size=n, p=probs)
+        samples = [buffer[i] for i in idxs]
+        samples = np.reshape(samples,(n,-1))
+        return samples
+
 class QLearningSession(object):
-    def __init__(self, n_episodes=100,
+    def __init__(self, n_episodes=1000,
                  hidden_neurons=20,
-                 y=0.9, K=10, learning_rate=100,
+                 y=0.9, K=10, alpha=0.99,
+                 learning_rate=100, sample_n=5,
                  initial_e=1, final_e=0.1,
                  anneal_frames=10000, observe_frames=1000,
                  update_frames=100, memory_size=5000):
-        self.n_inputs = 15
+        self.n_inputs = 30
         self.n_episodes = n_episodes
 
         self.anneal_frames = anneal_frames
@@ -34,34 +42,28 @@ class QLearningSession(object):
         self.update_frames = update_frames
         self.frames = 0
 
-        # future reward discount
         self.y = y
-        # exploration-exploitation factor
         self.e = initial_e
-        # e value to anneal to over `anneal_frames`
         self.final_e = final_e
-        # only train from memory every K iterations
         self.K = K
-
-        # TODO: set learning rate
+        self.sample_n = sample_n
 
         self.ai = AI(self.n_inputs,
                      hidden_neurons=hidden_neurons,
                      learning_rate=learning_rate)
-        self.memory = Memory(memory_size)
+        self.memory = Memory(memory_size, alpha)
 
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
 
     def run(self):
         for i in range(self.n_episodes):
-            print(self.sess.run(self.ai.W2)[0,0])
             state, reward, done = self.env_init()
             str_actions = ''
-            x = 0
+            time_alive = 0
 
             while True:
-                x += 1
+                time_alive += 1
                 self.frames += 1
 
                 action, _ = self._get_action(state)
@@ -79,7 +81,7 @@ class QLearningSession(object):
 
                 # sample memories and train from them
                 if self.frames > self.observe_frames and self.frames % self.K == 0:
-                    samples = self.memory.sample(3)
+                    samples = self.memory.sample(self.sample_n)
                     for s in samples:
                         self._training_step(*s)
                     state = new_state
@@ -88,11 +90,11 @@ class QLearningSession(object):
 
                 if done:
                     print(f'episode {i}')
-                    print(f'time alive: {x}')
+                    print(f'time alive: {time_alive}')
                     print(f'actions: {str_actions}')
                     print(f'e: {self.e}')
                     print()
-                    x = 0
+                    time_alive = 0
                     break
 
         self.post_run()

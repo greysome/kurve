@@ -2,7 +2,7 @@ import pickle
 from sys import argv
 from engine import Engine
 from qlearning import QLearningSession
-from config import *
+import config
 
 class TrainSession(QLearningSession):
     def __init__(self, **kwargs):
@@ -25,10 +25,8 @@ class TrainSession(QLearningSession):
         self.sess.close()
 
 if __name__ == '__main__':
-    sess = TrainSession(n_episodes=n_episodes,
-                        hidden_neurons=hidden_neurons,
-                        y=y, K=K, learning_rate=learning_rate,
-                        initial_e=initial_e, final_e=final_e,
-                        anneal_frames=anneal_frames, observe_frames=observe_frames,
-                        update_frames=update_frames, memory_size=memory_size):
+    # retrieve only user-defined variables
+    kwargs = {k: v for k, v in config.__dict__.items() \
+              if not k.startswith('__')}
+    sess = TrainSession(**kwargs)
     sess.run()

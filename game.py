@@ -5,6 +5,7 @@ from time import sleep
 import tensorflow as tf
 from engine import Engine
 from ai import AI
+from config import hidden_neurons
 
 # suppress welcome message
 with contextlib.redirect_stdout(None):
@@ -22,7 +23,7 @@ MAGENTA = (255, 0, 255)
 PINK = (155, 155, 155)
 
 class Game(Engine):
-    def __init__(self, n_humans, n_ais):
+    def __init__(self, n_humans, n_ais, model):
         super().__init__(n_humans+n_ais)
 
         self.n_humans = n_humans
@@ -48,13 +49,13 @@ class Game(Engine):
 
         self.ai_ids = range(n_humans, n_humans+n_ais)
         self.ai_states = {}
-        self.ai = AI(15)
+        self.ai = AI(30, hidden_neurons=hidden_neurons)
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
-        with open('trained.model', 'rb') as f:
-            self.W1, self.W2 = pickle.load(f)
-            W1_assign = self.ai.W1.assign(self.W1)
-            W2_assign = self.ai.W2.assign(self.W2)
+        with open(model+'.model', 'rb') as f:
+            W1, W2 = pickle.load(f)
+            W1_assign = self.ai.W1.assign(W1)
+            W2_assign = self.ai.W2.assign(W2)
             self.sess.run((W1_assign, W2_assign))
 
         self._pygame_init()
@@ -164,16 +165,17 @@ class Game(Engine):
                 p.r
             )
 
-def main(n_humans, n_ais):
-    game = Game(n_humans, n_ais)
+def main(n_humans, n_ais, model):
+    game = Game(n_humans, n_ais, model)
     game.run()
       
 if __name__ == "__main__":
     try:
         n_humans = int(argv[1])
         n_ais = int(argv[2])
+        model = (argv[3] if len(argv) >= 4 else 'trained.model')
     except:
-        print('usage: python game.py <n_humans> <n_ais>')
+        print('usage: python game.py <n_humans> <n_ais> <custom model>')
         exit()
     else:
         if n_humans > 5:
@@ -183,4 +185,4 @@ if __name__ == "__main__":
         if not 1 <= n_humans+n_ais <= 9:
             print('total number of players between 1 and 9')
             exit()
-    main(n_humans, n_ais)
+    main(n_humans, n_ais, model)
