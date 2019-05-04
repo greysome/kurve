@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 class AI(object):
-    def __init__(self, n_inputs, hidden_neurons=20, learning_rate=0.01):
+    def __init__(self, n_inputs, hidden_neurons, learning_rate):
         self.inputs = tf.placeholder(shape=(1,n_inputs), dtype=tf.float32)
         self.W1 = tf.Variable(tf.random_uniform((n_inputs,hidden_neurons), 0, 1))
         self.x1 = tf.matmul(self.inputs, self.W1)

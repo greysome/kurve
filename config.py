@@ -1,5 +1,5 @@
 # how many games to run total?
-n_episodes = 10000
+n_episodes = 500
 
 # no. of neurons in hidden layer
 hidden_neurons = 20
@@ -17,7 +17,7 @@ K = 10
 alpha = 0.99
 
 # how many memories to sample each training step?
-sample_n = 5
+sample_n = 10
 
 # learning rate of gradient descent
 learning_rate = 0.01
@@ -26,14 +26,14 @@ learning_rate = 0.01
 # every frame, a random action will be sampled with probability e
 initial_e = 1
 # e value to arrive at after `anneal_frames` frames
-final_e = 0.1
+final_e = 0.01
 anneal_frames = 10000
 
 # number of frames to collect memories before training on them
 observe_frames = 1000
 
 # update target network every `update_frames` frames
-update_frames = 500
+update_frames = 300
 
 # maximum memory size
 memory_size = 5000

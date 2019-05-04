@@ -8,14 +8,27 @@ class TrainSession(QLearningSession):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.engine = Engine(1)
+
+    def _get_reward_and_done(self):
+        if self.engine.players[0].is_alive:
+            done = False
+            reward = 0
+        else:
+            done = True
+            reward = -1
+        return reward, done
         
     def env_init(self):
         self.engine.reset()
-        return self.engine.observe(0)
+        state = self.engine.observe(0)
+        reward, done = self._get_reward_and_done()
+        return state, reward, done
 
     def env_step(self, action):
         self.engine.step([(0, action)])
-        return self.engine.observe(0)
+        state = self.engine.observe(0)
+        reward, done = self._get_reward_and_done()
+        return state, reward, done
 
     def post_run(self):
         W1, W2 = self.sess.run((self.ai.W1, self.ai.W2))
