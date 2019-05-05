@@ -5,9 +5,13 @@ from qlearning import QLearningSession
 import config
 
 class TrainSession(QLearningSession):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.engine = Engine(1)
+    def __init__(self, sector_theta, fov, **kwargs):
+        # The additional 3 features are player.x, player.y and player.theta
+        n_inputs = fov//sector_theta+3
+        super().__init__(n_inputs=n_inputs, **kwargs)
+        self.engine = Engine(1,
+                             w=500, h=500,
+                             sector_theta=sector_theta, fov=fov)
 
     def _get_reward_and_done(self):
         if self.engine.players[0].is_alive:

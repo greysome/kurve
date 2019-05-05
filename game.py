@@ -5,7 +5,7 @@ from time import sleep
 import tensorflow as tf
 from engine import Engine
 from ai import AI
-from config import hidden_neurons
+import config
 
 # suppress welcome message
 with contextlib.redirect_stdout(None):
@@ -23,8 +23,10 @@ MAGENTA = (255, 0, 255)
 PINK = (155, 155, 155)
 
 class Game(Engine):
-    def __init__(self, n_humans, n_ais, model):
-        super().__init__(n_humans+n_ais)
+    def __init__(self, n_humans, n_ais, model, sector_theta, fov):
+        super().__init__(n_humans+n_ais,
+                         w=500, h=500,
+                         sector_theta=sector_theta, fov=fov)
 
         self.n_humans = n_humans
         self.n_ais = n_ais
@@ -49,7 +51,7 @@ class Game(Engine):
 
         self.ai_ids = range(n_humans, n_humans+n_ais)
         self.ai_states = {}
-        self.ai = AI(30, hidden_neurons=hidden_neurons)
+        self.ai = AI(33, hidden_neurons=config.hidden_neurons, learning_rate=0)
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
         with open(model+'.model', 'rb') as f:
@@ -88,7 +90,7 @@ class Game(Engine):
             self.step(self._get_human_updates() + self._get_ai_updates())
             self.ai_states = {}
             for id_ in self.ai_ids:
-                state, *_ = self.observe(id_)
+                state = self.observe(id_)
                 self.ai_states.update({id_: state})
             self._draw_players_postupdate()
 
@@ -146,7 +148,7 @@ class Game(Engine):
         for id_, inputs in self.ai_states.items():
             action = self.sess.run(self.ai.action,
                                    feed_dict={self.ai.inputs: inputs})
-            updates.append((id_, action[0]))
+            updates.append((id_, action))
         return updates
 
     def _draw_players_preupdate(self):
@@ -164,16 +166,12 @@ class Game(Engine):
                 (round(p.x), round(p.y)),
                 p.r
             )
-
-def main(n_humans, n_ais, model):
-    game = Game(n_humans, n_ais, model)
-    game.run()
       
 if __name__ == "__main__":
     try:
         n_humans = int(argv[1])
         n_ais = int(argv[2])
-        model = (argv[3] if len(argv) >= 4 else 'trained.model')
+        model = (argv[3] if len(argv) >= 4 else 'trained')
     except:
         print('usage: python game.py <n_humans> <n_ais> <custom model>')
         exit()
@@ -185,4 +183,7 @@ if __name__ == "__main__":
         if not 1 <= n_humans+n_ais <= 9:
             print('total number of players between 1 and 9')
             exit()
-    main(n_humans, n_ais, model)
+
+    game = Game(n_humans=n_humans, n_ais=n_ais, model=model,
+                sector_theta=config.sector_theta, fov=config.fov)
+    game.run()

@@ -55,7 +55,7 @@ class Engine(object):
     ACTION_LEFT = 0
     ACTION_RIGHT = 1
 
-    def __init__(self, n_players, w=500, h=500):
+    def __init__(self, n_players, w, h, sector_theta, fov):
         Player.n_instances = 0
         self.w, self.h = w, h
         self.n_players = n_players
@@ -64,6 +64,8 @@ class Engine(object):
         self.trail = []
         self.n_ticks = 0
         self.players = self._init_players()
+        self.sector_theta = sector_theta
+        self.fov = fov
 
     def reset(self):
         Player.n_instances = 0
@@ -89,7 +91,12 @@ class Engine(object):
 
     def observe(self, id_):
         p = self._find_player(id_)
-        return self._get_max_dists(p)
+        dists = self._get_max_dists(p)
+        x = p.x / self.w
+        y = p.y / self.h
+        theta = p.theta / 360
+        state = np.insert(dists, 0, (x, y, theta))
+        return state.reshape(1, -1)
 
     def out_of_bounds(self, x, y):
         return x <= 0 or x >= self.w or y <= 0 or y >= self.h
@@ -189,11 +196,11 @@ class Engine(object):
                 return p
         raise KurveError(f'could not find player with id {id_}')
 
-    def _get_max_dists(self, p, sector_theta=5, fov=150):
-        n_sectors = fov//sector_theta
+    def _get_max_dists(self, p):
+        n_sectors = self.fov//self.sector_theta
         max_dists = np.zeros(n_sectors)
 
-        thetas = range(p.theta-fov//2, p.theta+fov//2, sector_theta)
+        thetas = range(p.theta-self.fov//2, p.theta+self.fov//2, self.sector_theta)
         dxs = np.array([cos(radians(theta))*p.r for theta in thetas])
         dys = np.array([sin(radians(theta))*p.r for theta in thetas])
         xs = np.array([float(p.x) for _ in thetas])
@@ -231,4 +238,4 @@ class Engine(object):
             if len(remaining) == 0:
                 break
 
-        return max_dists.reshape(1,-1)
+        return max_dists
