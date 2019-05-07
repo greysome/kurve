@@ -51,7 +51,9 @@ class Game(Engine):
 
         self.ai_ids = range(n_humans, n_humans+n_ais)
         self.ai_states = {}
-        self.ai = AI(33, hidden_neurons=config.hidden_neurons, learning_rate=0)
+        self.ai = AI(n_inputs=config.fov//config.sector_theta,
+                     hidden_neurons=config.hidden_neurons,
+                     learning_rate=0)
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
         with open(model+'.model', 'rb') as f:
@@ -97,7 +99,7 @@ class Game(Engine):
             self.screen.blit(self.tmp_sfc, (0, 0))
             self.screen.blit(self.body_sfc, (0, 0))
             pygame.display.flip()
-            sleep(0.02)
+            sleep(0.03)
 
     def reset(self):
         super().reset()
@@ -176,12 +178,8 @@ if __name__ == "__main__":
         print('usage: python game.py <n_humans> <n_ais> <custom model>')
         exit()
     else:
-        if n_humans > 5:
-            print('max 5 human players!')
-            exit()
-            
-        if not 1 <= n_humans+n_ais <= 9:
-            print('total number of players between 1 and 9')
+        if not 1 <= n_humans+n_ais <= 3:
+            print('total number of players between 1 and 3')
             exit()
 
     game = Game(n_humans=n_humans, n_ais=n_ais, model=model,

@@ -11,7 +11,7 @@ hidden_neurons = 20
 
 #---------- Q-LEARNING ----------#
 # how many games to run total?
-n_episodes = 1000
+n_episodes = 60
 
 # future reward discount
 y = 0.9
@@ -40,7 +40,7 @@ anneal_frames = 50000
 observe_frames = 1000
 
 # update target network every `update_frames` frames
-update_frames = 300
+update_frames = 1000
 
 #---------- MEMORY ----------#
 # maximum memory size

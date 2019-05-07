@@ -1,7 +1,6 @@
 import random
 import contextlib
 import numpy as np
-from time import sleep
 from math import cos, sin, radians, floor
 from enum import Enum
 
@@ -92,11 +91,7 @@ class Engine(object):
     def observe(self, id_):
         p = self._find_player(id_)
         dists = self._get_max_dists(p)
-        x = p.x / self.w
-        y = p.y / self.h
-        theta = p.theta / 360
-        state = np.insert(dists, 0, (x, y, theta))
-        return state.reshape(1, -1)
+        return dists.reshape(1,-1)
 
     def out_of_bounds(self, x, y):
         return x <= 0 or x >= self.w or y <= 0 or y >= self.h

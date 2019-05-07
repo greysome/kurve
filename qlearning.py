@@ -20,21 +20,15 @@ class Memory(object):
             return {}
 
         # TODO: use sum-tree
-        probs = np.array([self._probability(x)**self.alpha for x in self.buffer])
+        probs = np.array([self._priority(x)**self.alpha for x in self.buffer])
         probs /= sum(probs)
         idxs = np.random.choice(np.arange(len(self.buffer)),size=n, p=probs)
-        lol = len([i for i in idxs if self.buffer[i][2] == -1])
-        print(lol, n)
         samples = {idx: self.buffer[idx] for idx in idxs}
         return samples
 
     def _priority(self, transition):
         error = transition[-1]
         return abs(error) + self.epsilon
-
-    def _probability(self, transition):
-        error = transition[-1]
-        return self._priority(transition)**self.alpha
 
 class QLearningSession(object):
     def __init__(self, n_inputs, n_episodes, hidden_neurons,
@@ -64,31 +58,28 @@ class QLearningSession(object):
         self.sess.run(tf.global_variables_initializer())
 
     def run(self):
+        self.pre_run()
+        
         for i in range(self.n_episodes):
             state, reward, done = self.env_init()
-            actual_actions = pred_actions = ''
-            time_alive = 0
 
             while True:
-                time_alive += 1
-
-                action, pred = self._get_action(state)
-                pred_actions += str(pred)
-                actual_actions += str(action)
+                action, predicted_action = self._get_action(state)
 
                 # carry out action `K` times (prevent jerking)
                 for j in range(self.K):
                     new_state, reward, done = self.env_step(action)
                     # set maximum error to ensure that
                     # transition is sampled at least once
-                    error = 2
+                    # TODO: set max error instead of 2
+                    error = 10
                     # update memory
                     self.memory.add(state, action, reward, new_state, done, error)
 
                     # update target network
                     if self.frames > self.observe_frames and \
                         self.frames % self.update_frames == 0:
-                        print('updating Q- model')
+                        print(10*'-', 'updating Q- model', 10*'-')
                         W1_assign = self.ai.W1_.assign(self.ai.W1)
                         W2_assign = self.ai.W2_.assign(self.ai.W2)
                         self.sess.run((W1_assign, W2_assign))
@@ -109,13 +100,9 @@ class QLearningSession(object):
                         # update transition error
                         self.memory.buffer[idx] = (*transition, error)
 
+                self.post_frame(action, predicted_action, reward)
                 if done:
-                    print(f'episode {i}')
-                    print(f'time alive: {time_alive}')
-                    print(f'predicted actions: {pred_actions}')
-                    print(f'actual actions: {actual_actions}')
-                    print(f'e: {self.e}')
-                    print()
+                    self.post_episode(i)
                     break
 
         self.post_run()
@@ -125,6 +112,15 @@ class QLearningSession(object):
         pass
 
     def env_step(self):
+        pass
+
+    def pre_run(self):
+        pass
+
+    def post_frame(self, actual_action, predicted_action, reward):
+        pass
+
+    def post_episode(self, i):
         pass
 
     def post_run(self):
@@ -170,8 +166,8 @@ class QLearningSession(object):
             return reward + self.y*Q_[new_action] - Q[action]
 
     def _training_step(self, state, action, reward, new_state, done):
+        Q = self._Q(state)
         Q_target = self._get_Q_target(state, action, reward, new_state, done)
         self.sess.run(self.ai.update_model,
                       feed_dict={self.ai.inputs: state,
                                  self.ai.Q_target: Q_target})
-        return Q_target[action]

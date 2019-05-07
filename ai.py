@@ -17,6 +17,6 @@ class AI(object):
 
         self.Q_target = tf.placeholder(shape=self.Q.shape, dtype=tf.float32)
         self.loss = tf.losses.huber_loss(self.Q_target, self.Q)
-        self.trainer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
+        self.trainer = tf.train.AdamOptimizer(learning_rate=learning_rate)
         self.gradient = self.trainer.compute_gradients(self.loss)
         self.update_model = self.trainer.minimize(self.loss)
