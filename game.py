@@ -52,6 +52,7 @@ class Game(Engine):
         self.ai_ids = range(n_humans, n_humans+n_ais)
         self.ai_states = {}
         self.ai = AI(n_inputs=config.fov//config.sector_theta,
+                     n_actions=3,
                      hidden_neurons=config.hidden_neurons,
                      learning_rate=0)
         self.sess = tf.Session()

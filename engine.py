@@ -90,8 +90,7 @@ class Engine(object):
 
     def observe(self, id_):
         p = self._find_player(id_)
-        dists = self._get_max_dists(p)
-        return dists.reshape(1,-1)
+        return self._get_max_dists(p)
 
     def out_of_bounds(self, x, y):
         return x <= 0 or x >= self.w or y <= 0 or y >= self.h

@@ -6,9 +6,11 @@ import matplotlib.pyplot as plt
 import config
 
 class TrainSession(QLearningSession):
-    def __init__(self, sector_theta, fov, **kwargs):
+    def __init__(self, model_file, sector_theta, fov, **kwargs):
         n_inputs = fov//sector_theta
         super().__init__(n_inputs=n_inputs, **kwargs)
+        self.model_file = model_file
+        self.load_model()
         self.engine = Engine(1,
                              w=500, h=500,
                              sector_theta=sector_theta, fov=fov)
@@ -35,11 +37,10 @@ class TrainSession(QLearningSession):
         return state, reward, done
 
     def pre_run(self):
+        self.print_header(f'running {self.n_episodes} episodes')
         self.actual_actions = self.predicted_actions = ''
         self.times_alive = []
         self.time_alive = 0
-        print(f'running {self.n_episodes} episodes')
-        print('-'*30)
 
     def post_frame(self, actual_action, predicted_action, reward):
         self.time_alive += 1
@@ -56,7 +57,7 @@ class TrainSession(QLearningSession):
         self.times_alive.append(self.time_alive)
         self.time_alive = 0
 
-        if i % 5 == 0:
+        if i % 50 == 0:
             self.save_model()
 
     def post_run(self):
@@ -67,15 +68,28 @@ class TrainSession(QLearningSession):
         plt.plot(self.times_alive)
         plt.show()
 
+    def load_model(self):
+        with open(self.model_file, 'rb') as f:
+            W1, W2 = pickle.load(f)
+            W1_assign = self.ai.W1.assign(W1)
+            W2_assign = self.ai.W2.assign(W2)
+            W1__assign = self.ai.W1_.assign(W1)
+            W2__assign = self.ai.W2_.assign(W2)
+            self.sess.run((W1_assign, W2_assign, W1__assign, W2__assign))
+        self.print_header(f'loaded {self.model_file}')
+
     def save_model(self):
         W1, W2 = self.sess.run((self.ai.W1, self.ai.W2))
         with open('trained.model', 'wb') as f:
             pickle.dump((W1, W2), f)
-        print('-'*10, 'saving model in trained.model', '-'*10)
+        self.print_header('saving model in trained.model')
 
 if __name__ == '__main__':
+    model_name = argv[1]
     # retrieve only user-defined variables
     kwargs = {k: v for k, v in config.__dict__.items() \
               if not k.startswith('__')}
-    sess = TrainSession(**kwargs)
+    sess = TrainSession(**kwargs,
+                        model_file=model_name+'.model',
+                        n_actions=3)
     sess.run()

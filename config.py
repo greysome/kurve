@@ -11,7 +11,7 @@ hidden_neurons = 20
 
 #---------- Q-LEARNING ----------#
 # how many games to run total?
-n_episodes = 60
+n_episodes = 10000
 
 # future reward discount
 y = 0.9
@@ -30,14 +30,14 @@ learning_rate = 0.01
 initial_e = 1
 
 # e value to arrive at after `anneal_frames` frames
-final_e = 0.01
+final_e = 0.1
 
 # number of frames over which to anneal the value of
 # exploration-explotation factor to `final_e`
 anneal_frames = 50000
 
 # number of frames to collect memories before training on them
-observe_frames = 1000
+observe_frames = 5000
 
 # update target network every `update_frames` frames
 update_frames = 1000

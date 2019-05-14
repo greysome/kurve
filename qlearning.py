@@ -19,6 +19,11 @@ class Memory(object):
         if len(self.buffer) < n:
             return {}
 
+        '''
+        idxs = random.sample(range(len(self.buffer)), n)
+        return {idx: self.buffer[idx] for idx in idxs}
+        '''
+
         # TODO: use sum-tree
         probs = np.array([self._priority(x)**self.alpha for x in self.buffer])
         probs /= sum(probs)
@@ -31,12 +36,14 @@ class Memory(object):
         return abs(error) + self.epsilon
 
 class QLearningSession(object):
-    def __init__(self, n_inputs, n_episodes, hidden_neurons,
-                 learning_rate, y, K, sample_n, initial_e, final_e,
-                 anneal_frames, observe_frames, update_frames,
-                 memory_size, alpha, memory_epsilon):
-        self.n_inputs = n_inputs
+    def __init__(self, n_inputs, n_actions, hidden_neurons=20,
+                 n_episodes=1000, learning_rate=0.01, y=0.9, K=1,
+                 sample_n=32, initial_e=1, final_e=0.1,
+                 anneal_frames=10000, observe_frames=1000,
+                 update_frames=500, memory_size=50000, alpha=0.99,
+                 memory_epsilon=0.01):
         self.n_episodes = n_episodes
+        self.n_actions = n_actions
 
         self.anneal_frames = anneal_frames
         self.observe_frames = observe_frames
@@ -49,7 +56,8 @@ class QLearningSession(object):
         self.K = K
         self.sample_n = sample_n
 
-        self.ai = AI(self.n_inputs,
+        self.ai = AI(n_inputs=n_inputs,
+                     n_actions=n_actions,
                      hidden_neurons=hidden_neurons,
                      learning_rate=learning_rate)
         self.memory = Memory(memory_size, alpha, memory_epsilon)
@@ -71,15 +79,15 @@ class QLearningSession(object):
                     new_state, reward, done = self.env_step(action)
                     # set maximum error to ensure that
                     # transition is sampled at least once
-                    # TODO: set max error instead of 2
-                    error = 10
+                    # TODO: set max error instead of 5
+                    error = 5
                     # update memory
                     self.memory.add(state, action, reward, new_state, done, error)
 
                     # update target network
                     if self.frames > self.observe_frames and \
                         self.frames % self.update_frames == 0:
-                        print(10*'-', 'updating Q- model', 10*'-')
+                        self.print_header('updating Q- model')
                         W1_assign = self.ai.W1_.assign(self.ai.W1)
                         W2_assign = self.ai.W2_.assign(self.ai.W2)
                         self.sess.run((W1_assign, W2_assign))
@@ -106,6 +114,9 @@ class QLearningSession(object):
                     break
 
         self.post_run()
+
+    def print_header(self, s):
+        print('-'*10, s, '-'*10)
 
     # To be implemented by subclasses
     def env_init(self):
@@ -142,7 +153,7 @@ class QLearningSession(object):
         # return predicted and actual action
         action = self._best_action(state)
         if np.random.rand(1) < self.e:
-            return np.random.randint(3), action
+            return np.random.randint(self.n_actions), action
         else:
             return action, action
 
@@ -166,7 +177,6 @@ class QLearningSession(object):
             return reward + self.y*Q_[new_action] - Q[action]
 
     def _training_step(self, state, action, reward, new_state, done):
-        Q = self._Q(state)
         Q_target = self._get_Q_target(state, action, reward, new_state, done)
         self.sess.run(self.ai.update_model,
                       feed_dict={self.ai.inputs: state,
